@@ -1,124 +1,97 @@
 'use client';
-
-import { motion } from 'framer-motion';
-import { BusinessCategory, CATEGORY_LABELS } from '../../types';
-import SentimentBar from '../review/SentimentBar';
+import { BusinessCategory, CATEGORY_LABELS, Sentiment, SENTIMENT_LABELS } from '../../types';
 import { useLanguage } from '../../hooks/useLanguage';
 
+const CAT_COLORS: Record<BusinessCategory, { bg: string; text: string; border: string }> = {
+  hotels:      { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
+  restaurants: { bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA' },
+  repair:      { bg: '#F5F3FF', text: '#7C3AED', border: '#DDD6FE' },
+  grocery:     { bg: '#F0FDF4', text: '#15803D', border: '#BBF7D0' },
+  medical:     { bg: '#FFF1F2', text: '#BE123C', border: '#FECDD3' },
+  transport:   { bg: '#FFFBEB', text: '#B45309', border: '#FDE68A' },
+};
+
+const SENT_COLORS: Record<Sentiment, string> = {
+  perfection: '#F59E0B', go_for_it: '#22C55E', timepass: '#94A3B8', skip: '#EF4444',
+};
+
 interface BusinessCardProps {
-  id: string;
-  name: string;
-  category: BusinessCategory;
-  address: string;
-  googleRating?: number;
-  sentimentCounts: Record<string, number>;
-  dominantSentiment?: string | null;
-  imageUrl?: string;
-  onClick?: () => void;
+  id: string; name: string; category: BusinessCategory; address: string;
+  googleRating?: number; sentimentCounts: Record<string, number>;
+  dominantSentiment?: string | null; imageUrl?: string; onClick?: () => void;
 }
 
-export default function BusinessCard({
-  name,
-  category,
-  address,
-  googleRating,
-  sentimentCounts,
-  dominantSentiment,
-  imageUrl,
-  onClick,
-}: BusinessCardProps) {
-  const { language, t } = useLanguage();
-  const categoryInfo = CATEGORY_LABELS[category];
-  const categoryLabel = language === 'hi' ? categoryInfo.hi : categoryInfo.en;
+export default function BusinessCard({ name, category, address, googleRating, sentimentCounts, dominantSentiment }: BusinessCardProps) {
+  const { language } = useLanguage();
+  const hi = language === 'hi';
+  const cat = CATEGORY_LABELS[category];
+  const cc = CAT_COLORS[category];
+  const total = Object.values(sentimentCounts).reduce((a, b) => a + b, 0);
+  const order: Sentiment[] = ['perfection', 'go_for_it', 'timepass', 'skip'];
+  const topS = dominantSentiment as Sentiment | null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -8 }}
-      transition={{ duration: 0.5 }}
-      onClick={onClick}
-      className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden group"
-    >
-      {/* Image section with overlay */}
-      <div className="relative overflow-hidden h-48">
-        {imageUrl ? (
-          <motion.img 
-            src={imageUrl} 
-            alt={name} 
-            className="w-full h-full object-cover"
-            whileHover={{ scale: 1.1 }}
-            transition={{ duration: 0.6 }}
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-6xl group-hover:from-gray-200 group-hover:to-gray-300 transition-all duration-300">
-            {categoryInfo.emoji}
-          </div>
-        )}
-        
-        {/* Category badge overlay */}
-        <motion.div 
-          className="absolute top-3 left-3"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <span className="inline-block px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 shadow-sm">
-            {categoryInfo.emoji} {categoryLabel}
-          </span>
-        </motion.div>
+    <div className="card group h-full flex flex-col">
+      {/* Colour header strip */}
+      <div className="h-2 w-full rounded-t-2xl" style={{ background: cc.text }} />
 
-        {/* Google rating badge */}
-        {googleRating !== undefined && (
-          <motion.div 
-            className="absolute top-3 right-3"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-400/90 backdrop-blur-sm rounded-full text-xs font-bold text-yellow-900 shadow-sm">
+      <div className="p-5 flex flex-col flex-1">
+        {/* Tags row */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <span className="tag text-xs" style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>
+            {cat.emoji} {hi ? cat.hi : cat.en}
+          </span>
+          {googleRating !== undefined && (
+            <span className="tag text-xs font-bold flex-shrink-0" style={{ background: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A' }}>
               ⭐ {googleRating.toFixed(1)}
             </span>
-          </motion.div>
-        )}
-      </div>
-      
-      {/* Content section */}
-      <div className="p-5">
-        <motion.h3 
-          className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors"
-        >
-          {name}
-        </motion.h3>
-        
-        <p className="text-sm text-gray-600 mb-4 flex items-start gap-1">
-          <span>📍</span>
-          <span className="line-clamp-2">{address}</span>
-        </p>
-        
-        {/* Sentiment Bar */}
-        <SentimentBar 
-          sentimentCounts={sentimentCounts as any} 
-          dominantSentiment={dominantSentiment as any} 
-        />
-
-        {/* View details link */}
-        <motion.div 
-          className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          <span className="text-sm text-blue-600 font-medium group-hover:text-blue-700">
-            {language === 'hi' ? 'विवरण देखें →' : 'View Details →'}
-          </span>
-          {dominantSentiment && (
-            <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
-              {dominantSentiment}
-            </span>
           )}
-        </motion.div>
+        </div>
+
+        {/* Name */}
+        <h3 className="font-bold text-[15px] leading-snug mb-1.5 group-hover:text-[var(--brand-saffron)] transition-colors"
+          style={{ color: 'var(--brand-slate)' }}>
+          {name}
+        </h3>
+
+        {/* Address */}
+        <p className="text-xs text-slate-500 flex items-start gap-1 mb-4 line-clamp-2">
+          <svg className="w-3 h-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
+          </svg>
+          {address}
+        </p>
+
+        {/* Sentiment */}
+        {total > 0 ? (
+          <div className="mt-auto">
+            {topS && SENTIMENT_LABELS[topS] && (
+              <span className={`tag pill-${topS} text-xs mb-2`}>
+                {SENTIMENT_LABELS[topS].emoji} {hi ? SENTIMENT_LABELS[topS].hi : SENTIMENT_LABELS[topS].en}
+              </span>
+            )}
+            {/* Bar */}
+            <div className="flex h-1.5 w-full rounded-full overflow-hidden gap-px mt-2">
+              {order.map(s => {
+                const pct = ((sentimentCounts[s] ?? 0) / total) * 100;
+                return pct > 0 ? <div key={s} style={{ width: `${pct}%`, background: SENT_COLORS[s] }} /> : null;
+              })}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1.5">{total} {hi ? 'वोट' : 'votes'}</p>
+          </div>
+        ) : (
+          <div className="mt-auto">
+            <p className="text-xs text-slate-400 italic">{hi ? 'अभी कोई वोट नहीं' : 'No votes yet'}</p>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="pt-4 mt-3 border-t border-[#EDE8DF] flex items-center justify-between">
+          <span className="text-xs font-semibold" style={{ color: 'var(--brand-saffron)' }}>
+            {hi ? 'विवरण देखें →' : 'View Details →'}
+          </span>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

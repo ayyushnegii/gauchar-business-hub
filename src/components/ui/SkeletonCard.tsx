@@ -1,22 +1,17 @@
-'use client';
-import { motion } from 'framer-motion';
-
 export default function SkeletonCard() {
   return (
-    <motion.div 
-      className="bg-white rounded-2xl shadow-sm overflow-hidden"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      <div className="h-48 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer" />
-      <div className="p-4 space-y-3">
-        <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
-        <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse" />
-        <div className="flex gap-2">
-          <div className="h-6 w-16 bg-gray-200 rounded-full animate-pulse" />
-          <div className="h-6 w-16 bg-gray-200 rounded-full animate-pulse" />
+    <div className="card overflow-hidden">
+      <div className="h-2 w-full skeleton rounded-none" />
+      <div className="p-5 space-y-3">
+        <div className="flex justify-between">
+          <div className="h-5 w-24 skeleton rounded-full" />
+          <div className="h-5 w-12 skeleton rounded-full" />
         </div>
+        <div className="h-5 w-3/4 skeleton rounded-lg" />
+        <div className="h-3.5 w-1/2 skeleton rounded-lg" />
+        <div className="h-3 w-full skeleton rounded-full mt-4" />
+        <div className="h-3 w-2/3 skeleton rounded-lg" />
       </div>
-    </motion.div>
+    </div>
   );
 }

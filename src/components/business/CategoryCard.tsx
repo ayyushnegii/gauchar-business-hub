@@ -1,9 +1,15 @@
 'use client';
-
-import { motion } from 'framer-motion';
-import Link from 'next/link';
 import { BusinessCategory, CATEGORY_LABELS } from '../../types';
 import { useLanguage } from '../../hooks/useLanguage';
+
+const CAT_COLORS: Record<BusinessCategory, { bg: string; text: string; border: string; accent: string }> = {
+  hotels:      { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE', accent: '#3B82F6' },
+  restaurants: { bg: '#FFF7ED', text: '#C2410C', border: '#FED7AA', accent: '#F97316' },
+  repair:      { bg: '#F5F3FF', text: '#7C3AED', border: '#DDD6FE', accent: '#8B5CF6' },
+  grocery:     { bg: '#F0FDF4', text: '#15803D', border: '#BBF7D0', accent: '#22C55E' },
+  medical:     { bg: '#FFF1F2', text: '#BE123C', border: '#FECDD3', accent: '#F43F5E' },
+  transport:   { bg: '#FFFBEB', text: '#B45309', border: '#FDE68A', accent: '#EAB308' },
+};
 
 interface CategoryCardProps {
   category: BusinessCategory;
@@ -11,62 +17,30 @@ interface CategoryCardProps {
   onClick?: () => void;
 }
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
-
 export default function CategoryCard({ category, count, onClick }: CategoryCardProps) {
   const { language } = useLanguage();
+  const hi = language === 'hi';
   const info = CATEGORY_LABELS[category];
-  const label = language === 'hi' ? info.hi : info.en;
-  
-  const bgColors = {
-    hotels: 'bg-blue-50 hover:bg-blue-100 border-blue-200 group-hover:border-blue-400',
-    restaurants: 'bg-orange-50 hover:bg-orange-100 border-orange-200 group-hover:border-orange-400',
-    repair: 'bg-purple-50 hover:bg-purple-100 border-purple-200 group-hover:border-purple-400',
-    grocery: 'bg-green-50 hover:bg-green-100 border-green-200 group-hover:border-green-400',
-    medical: 'bg-red-50 hover:bg-red-100 border-red-200 group-hover:border-red-400',
-    transport: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 group-hover:border-yellow-400',
-  };
-
-  const iconBgColors = {
-    hotels: 'bg-blue-100 group-hover:bg-blue-200',
-    restaurants: 'bg-orange-100 group-hover:bg-orange-200',
-    repair: 'bg-purple-100 group-hover:bg-purple-200',
-    grocery: 'bg-green-100 group-hover:bg-green-200',
-    medical: 'bg-red-100 group-hover:bg-red-200',
-    transport: 'bg-yellow-100 group-hover:bg-yellow-200',
-  };
+  const c = CAT_COLORS[category];
 
   return (
-    <motion.button
-      variants={cardVariants}
-      initial="hidden"
-      animate="visible"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={onClick}
-      className={`
-        group flex flex-col items-center justify-center p-6 rounded-2xl border-2
-        transition-all duration-300 shadow-sm hover:shadow-xl
-        ${bgColors[category]}
-        ${onClick ? 'cursor-pointer' : 'cursor-default'}
-      `}
-    >
-      <motion.div
-        className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${iconBgColors[category]}`}
-        whileHover={{ rotate: 5 }}
-        transition={{ type: "spring", stiffness: 300 }}
-      >
-        <span className="text-4xl">{info.emoji}</span>
-      </motion.div>
-      <span className="font-semibold text-gray-800 text-center mb-1">{label}</span>
+    <button onClick={onClick}
+      className="group w-full flex flex-col items-center gap-2.5 p-5 rounded-2xl border-2 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+      style={{ background: c.bg, borderColor: c.border }}>
+      {/* Icon ring */}
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform duration-200 group-hover:scale-110"
+        style={{ background: `${c.accent}18`, border: `1.5px solid ${c.border}` }}>
+        {info.emoji}
+      </div>
+      <span className="text-xs font-semibold text-center leading-tight"
+        style={{ color: c.text, fontFamily: hi ? 'var(--font-hindi)' : undefined }}>
+        {hi ? info.hi : info.en}
+      </span>
       {count !== undefined && (
-        <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm">
-          {count} {language === 'hi' ? 'स्थान' : 'places'}
+        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: `${c.accent}20`, color: c.text }}>
+          {count} {hi ? 'स्थान' : 'places'}
         </span>
       )}
-    </motion.button>
+    </button>
   );
 }

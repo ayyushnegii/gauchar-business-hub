@@ -1,80 +1,50 @@
 'use client';
-
-import { motion, AnimatePresence } from 'framer-motion';
 import { Sentiment, SENTIMENT_LABELS } from '../../types';
 import { useLanguage } from '../../hooks/useLanguage';
 
-interface SentimentButtonProps {
-  sentiment: Sentiment;
-  count?: number;
-  isSelected?: boolean;
-  onClick?: () => void;
-  showCount?: boolean;
-}
+const STYLES: Record<Sentiment, { idle: string; active: string; ring: string }> = {
+  perfection: {
+    idle:   'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100 hover:border-amber-400',
+    active: 'bg-amber-500 border-amber-600 text-white shadow-md shadow-amber-200',
+    ring:   '#F59E0B',
+  },
+  go_for_it: {
+    idle:   'bg-green-50 border-green-200 text-green-800 hover:bg-green-100 hover:border-green-400',
+    active: 'bg-green-500 border-green-600 text-white shadow-md shadow-green-200',
+    ring:   '#22C55E',
+  },
+  timepass: {
+    idle:   'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-400',
+    active: 'bg-slate-500 border-slate-600 text-white shadow-md shadow-slate-200',
+    ring:   '#94A3B8',
+  },
+  skip: {
+    idle:   'bg-red-50 border-red-200 text-red-800 hover:bg-red-100 hover:border-red-400',
+    active: 'bg-red-500 border-red-600 text-white shadow-md shadow-red-200',
+    ring:   '#EF4444',
+  },
+};
 
-export default function SentimentButton({
-  sentiment,
-  count,
-  isSelected = false,
-  onClick,
-  showCount = false,
-}: SentimentButtonProps) {
+export default function SentimentButton({ sentiment, count, isSelected = false, onClick, showCount = false }: {
+  sentiment: Sentiment; count?: number; isSelected?: boolean; onClick?: () => void; showCount?: boolean;
+}) {
   const { language } = useLanguage();
-  const labels = SENTIMENT_LABELS[sentiment];
-  const label = language === 'hi' ? labels.hi : labels.en;
-  const emoji = labels.emoji;
-
-  const colorClasses = {
-    perfection: isSelected 
-      ? 'bg-yellow-500 border-yellow-600 text-white shadow-lg' 
-      : 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100',
-    go_for_it: isSelected 
-      ? 'bg-green-500 border-green-600 text-white shadow-lg' 
-      : 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100',
-    timepass: isSelected 
-      ? 'bg-gray-500 border-gray-600 text-white shadow-lg' 
-      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100',
-    skip: isSelected 
-      ? 'bg-red-500 border-red-600 text-white shadow-lg' 
-      : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100',
-  };
+  const hi = language === 'hi';
+  const s = STYLES[sentiment];
+  const lbl = SENTIMENT_LABELS[sentiment];
 
   return (
-    <motion.button
-      initial={{ scale: 1 }}
-      animate={{ 
-        scale: isSelected ? 1.05 : 1,
-      }}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={onClick}
-      className={`
-        flex items-center gap-2 px-5 py-3 rounded-xl border-2 transition-all
-        ${colorClasses[sentiment]}
-        ${onClick ? 'cursor-pointer' : 'cursor-default'}
-        font-medium
-      `}
-    >
-      <motion.span 
-        className="text-2xl"
-        animate={{ rotate: isSelected ? [0, -10, 10, 0] : 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {emoji}
-      </motion.span>
-      <span className="font-semibold">{label}</span>
-      <AnimatePresence>
-        {showCount && count !== undefined && (
-          <motion.span
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0 }}
-            className="ml-2 px-2.5 py-0.5 rounded-full bg-black/20 text-sm font-bold"
-          >
-            {count}
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </motion.button>
+    <button onClick={onClick}
+      className={`flex flex-col items-center gap-1.5 px-4 py-3.5 rounded-xl border-2 transition-all duration-150 font-medium w-full ${isSelected ? s.active : s.idle} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
+      style={isSelected ? { outline: `2px solid ${s.ring}`, outlineOffset: '2px' } : {}}>
+      <span className="text-2xl leading-none select-none">{lbl.emoji}</span>
+      <span className="text-xs font-semibold leading-tight text-center"
+        style={{ fontFamily: hi ? 'var(--font-hindi)' : undefined }}>
+        {hi ? lbl.hi : lbl.en}
+      </span>
+      {showCount && count !== undefined && (
+        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,0.12)' }}>{count}</span>
+      )}
+    </button>
   );
 }
