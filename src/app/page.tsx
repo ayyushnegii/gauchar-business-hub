@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import CategoryCard from '../components/business/CategoryCard';
 import SearchBar from '../components/search/SearchBar';
 import { BusinessCategory, CATEGORY_LABELS } from '../types';
@@ -17,118 +18,240 @@ const FEATURED_BUSINESSES = [
 export default function HomePage() {
   const { language, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    // Navigate to search results
     window.location.href = `/businesses?q=${encodeURIComponent(query)}`;
   };
 
   const categories = Object.keys(CATEGORY_LABELS) as BusinessCategory[];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            {language === 'hi' ? 'गौचर का अपना बिजनेस हब' : 'Gauchar Business Hub'}
-          </h1>
-          <p className="text-xl mb-8 text-blue-100">
+      <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white py-20 px-4 overflow-hidden">
+        {/* Animated background elements */}
+        <motion.div
+          className="absolute top-0 left-0 w-96 h-96 bg-white/5 rounded-full blur-3xl"
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -50, 0],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"
+          animate={{
+            x: [0, -100, 0],
+            y: [0, 50, 0],
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        />
+
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+              {language === 'hi' ? 'गौचर का अपना बिजनेस हब' : 'Gauchar Business Hub'}
+            </h1>
+          </motion.div>
+          
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-xl mb-8 text-blue-100"
+          >
             {language === 'hi' 
               ? 'असली अनुभवों के आधार पर सर्वश्रेष्ठ स्थान खोजें'
               : 'Find the best places based on real experiences, not just ratings'
             }
-          </p>
-          <SearchBar onSearch={handleSearch} />
+          </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
+            <SearchBar onSearch={handleSearch} />
+          </motion.div>
         </div>
       </section>
 
       {/* Categories */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
-          {language === 'hi' ? 'श्रेणियां' : 'Categories'}
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {categories.map((category) => (
-            <Link key={category} href={`/businesses?category=${category}`}>
-              <CategoryCard category={category} />
-            </Link>
-          ))}
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
+            {language === 'hi' ? 'श्रेणियां' : 'Explore Categories'}
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.map((category, index) => (
+              <motion.div
+                key={category}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <Link href={`/businesses?category=${category}`}>
+                  <CategoryCard category={category} />
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </section>
 
       {/* Featured Businesses */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
-          {language === 'hi' ? 'चुनिंदा व्यवसाय' : 'Featured Businesses'}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURED_BUSINESSES.map((business) => (
-            <Link key={business.id} href={`/businesses/${business.id}`}>
-              <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-4 border border-gray-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">{CATEGORY_LABELS[business.category].emoji}</span>
-                  <span className="text-sm text-blue-600 font-medium">
-                    {language === 'hi' ? CATEGORY_LABELS[business.category].hi : CATEGORY_LABELS[business.category].en}
-                  </span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{business.name}</h3>
-                <p className="text-sm text-gray-600 mb-3">{business.address}</p>
-                {business.googleRating && (
-                  <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                    <span>⭐</span>
-                    <span className="font-medium">{business.googleRating.toFixed(1)}</span>
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+        >
+          <h2 className="text-3xl font-bold text-center mb-10 text-gray-900">
+            {language === 'hi' ? 'चुनिंदा व्यवसाय' : 'Featured Businesses'}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {FEATURED_BUSINESSES.map((business, index) => (
+              <motion.div
+                key={business.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.15 }}
+                whileHover={{ y: -8 }}
+              >
+                <Link href={`/businesses/${business.id}`}>
+                  <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden group">
+                    <div className="relative h-48 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-8xl overflow-hidden">
+                      {CATEGORY_LABELS[business.category].emoji}
+                      <div
+                        className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-2xl">{CATEGORY_LABELS[business.category].emoji}</span>
+                        <span className="text-sm text-blue-600 font-medium">
+                          {language === 'hi' ? CATEGORY_LABELS[business.category].hi : CATEGORY_LABELS[business.category].en}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                        {business.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4 flex items-start gap-1">
+                        <span>📍</span>
+                        <span className="line-clamp-2">{business.address}</span>
+                      </p>
+                      {business.googleRating && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
+                          <span className="text-yellow-400">⭐</span>
+                          <span className="font-bold">{business.googleRating.toFixed(1)}</span>
+                        </div>
+                      )}
+                      <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-yellow-400 to-orange-400"
+                          initial={{ width: 0 }}
+                          whileInView={{ width: '60%' }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 1 }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2 text-center font-medium">
+                        {language === 'hi' ? 'समुदाय भावना' : 'Community Sentiment'}
+                      </p>
+                    </div>
                   </div>
-                )}
-                <div className="w-full bg-gray-100 h-4 rounded-full overflow-hidden">
-                  <div className="h-full bg-yellow-500" style={{ width: '60%' }} />
-                </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  {language === 'hi' ? 'समुदाय भावना' : 'Community Sentiment'}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </section>
 
       {/* How It Works */}
-      <section className="bg-blue-50 py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-10 text-gray-900">
+      <section className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <motion.h2
+            className="text-3xl font-bold text-center mb-10 text-gray-900"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
             {language === 'hi' ? 'यह कैसे काम करता है?' : 'How It Works'}
-          </h2>
+          </motion.h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-6">
-              <div className="text-4xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold mb-2">
-                {language === 'hi' ? '1. खोजें' : '1. Search'}
-              </h3>
-              <p className="text-gray-600">
-                {language === 'hi' ? 'अपनी आवश्यकतानुसार व्यवसाय खोजें' : 'Find businesses based on your needs'}
-              </p>
-            </div>
-            <div className="p-6">
-              <div className="text-4xl mb-4">💬</div>
-              <h3 className="text-xl font-semibold mb-2">
-                {language === 'hi' ? '2. समीक्षा करें' : '2. Review'}
-              </h3>
-              <p className="text-gray-600">
-                {language === 'hi' ? 'अपना अनुभव साझा करें' : 'Share your experience with others'}
-              </p>
-            </div>
-            <div className="p-6">
-              <div className="text-4xl mb-4">🏆</div>
-              <h3 className="text-xl font-semibold mb-2">
-                {language === 'hi' ? '3. खोजें सर्वश्रेष्ठ' : '3. Discover Best'}
-              </h3>
-              <p className="text-gray-600">
-                {language === 'hi' ? 'सर्वश्रेष्ठ व्यवसायों का पता लगाएं' : 'Find the best-rated places'}
-              </p>
-            </div>
+            {[
+              { emoji: '🔍', title: language === 'hi' ? '1. खोजें' : '1. Search', desc: language === 'hi' ? 'अपनी आवश्यकतानुसार व्यवसाय खोजें' : 'Find businesses based on your needs' },
+              { emoji: '💬', title: language === 'hi' ? '2. समीक्षा करें' : '2. Review', desc: language === 'hi' ? 'अपना अनुभव साझा करें' : 'Share your experience with others' },
+              { emoji: '🏆', title: language === 'hi' ? '3. खोजें सर्वश्रेष्ठ' : '3. Discover Best', desc: language === 'hi' ? 'सर्वश्रेष्ठ व्यवसायों का पता लगाएं' : 'Find the best-rated places' },
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.2 }}
+                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all group cursor-default"
+                whileHover={{ y: -10 }}
+              >
+                <motion.div
+                  className="text-6xl mb-4"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: index * 0.5 }}
+                >
+                  {item.emoji}
+                </motion.div>
+                <h3 className="text-xl font-bold mb-3 text-gray-900">{item.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 px-4">
+        <motion.div
+          className="max-w-2xl mx-auto text-center bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-12 text-white shadow-2xl"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 300 }}
+        >
+          <h2 className="text-3xl font-bold mb-4">
+            {language === 'hi' ? 'आज ही शुरू करें' : 'Get Started Today'}
+          </h2>
+          <p className="text-blue-100 mb-8">
+            {language === 'hi' ? 'गौचर के सर्वश्रेष्ठ व्यवसायों की खोज करें' : 'Discover the best businesses in Gauchar'}
+          </p>
+          <Link href="/businesses">
+            <motion.button
+              className="px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-lg"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {language === 'hi' ? 'अभी खोजें →' : 'Explore Now →'}
+            </motion.button>
+          </Link>
+        </motion.div>
       </section>
     </div>
   );

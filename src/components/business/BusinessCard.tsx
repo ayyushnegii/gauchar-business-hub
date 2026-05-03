@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { BusinessCategory, CATEGORY_LABELS } from '../../types';
 import SentimentBar from '../review/SentimentBar';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -31,44 +32,93 @@ export default function BusinessCard({
   const categoryLabel = language === 'hi' ? categoryInfo.hi : categoryInfo.en;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -8 }}
+      transition={{ duration: 0.5 }}
       onClick={onClick}
-      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-4 cursor-pointer border border-gray-100"
+      className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden group"
     >
-      {/* Image placeholder */}
-      {imageUrl ? (
-        <img src={imageUrl} alt={name} className="w-full h-48 object-cover rounded-lg mb-3" />
-      ) : (
-        <div className="w-full h-48 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-4xl">
-          {categoryInfo.emoji}
-        </div>
-      )}
-      
-      {/* Category badge */}
-      <div className="inline-block px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs mb-2">
-        {categoryInfo.emoji} {categoryLabel}
+      {/* Image section with overlay */}
+      <div className="relative overflow-hidden h-48">
+        {imageUrl ? (
+          <motion.img 
+            src={imageUrl} 
+            alt={name} 
+            className="w-full h-full object-cover"
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.6 }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-6xl group-hover:from-gray-200 group-hover:to-gray-300 transition-all duration-300">
+            {categoryInfo.emoji}
+          </div>
+        )}
+        
+        {/* Category badge overlay */}
+        <motion.div 
+          className="absolute top-3 left-3"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <span className="inline-block px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 shadow-sm">
+            {categoryInfo.emoji} {categoryLabel}
+          </span>
+        </motion.div>
+
+        {/* Google rating badge */}
+        {googleRating !== undefined && (
+          <motion.div 
+            className="absolute top-3 right-3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-400/90 backdrop-blur-sm rounded-full text-xs font-bold text-yellow-900 shadow-sm">
+              ⭐ {googleRating.toFixed(1)}
+            </span>
+          </motion.div>
+        )}
       </div>
       
-      {/* Name */}
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">{name}</h3>
-      
-      {/* Address */}
-      <p className="text-sm text-gray-600 mb-3">{address}</p>
-      
-      {/* Google Rating */}
-      {googleRating !== undefined && (
-        <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-          <span>⭐</span>
-          <span className="font-medium">{googleRating.toFixed(1)}</span>
-          <span className="text-xs text-gray-400">({t('googleRating')})</span>
-        </div>
-      )}
-      
-      {/* Sentiment Bar */}
-      <SentimentBar 
-        sentimentCounts={sentimentCounts as any} 
-        dominantSentiment={dominantSentiment as any} 
-      />
-    </div>
+      {/* Content section */}
+      <div className="p-5">
+        <motion.h3 
+          className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors"
+        >
+          {name}
+        </motion.h3>
+        
+        <p className="text-sm text-gray-600 mb-4 flex items-start gap-1">
+          <span>📍</span>
+          <span className="line-clamp-2">{address}</span>
+        </p>
+        
+        {/* Sentiment Bar */}
+        <SentimentBar 
+          sentimentCounts={sentimentCounts as any} 
+          dominantSentiment={dominantSentiment as any} 
+        />
+
+        {/* View details link */}
+        <motion.div 
+          className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <span className="text-sm text-blue-600 font-medium group-hover:text-blue-700">
+            {language === 'hi' ? 'विवरण देखें →' : 'View Details →'}
+          </span>
+          {dominantSentiment && (
+            <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
+              {dominantSentiment}
+            </span>
+          )}
+        </motion.div>
+      </div>
+    </motion.div>
   );
 }
