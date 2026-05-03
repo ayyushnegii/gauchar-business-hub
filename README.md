@@ -1,36 +1,138 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gauchar Business Hub 🏔️
 
-## Getting Started
+A local business discovery and review platform for Gauchar, Uttarakhand. Built with Next.js, TypeScript, and Tailwind CSS.
 
-First, run the development server:
+## ✨ Features
 
+- **Sentiment-Based Rating System**: Instead of star ratings, users choose from:
+  - 🏆 Perfection
+  - 👍 Go for it
+  - 😐 Timepass
+  - 👎 Skip
+
+- **Multilingual Support**: Full English + Hindi language support
+- **Google Places Integration**: External trust layer with Google ratings (clearly labeled)
+- **Smart Filters**: Filter by category, sentiment, and more
+- **Mobile-First Design**: Responsive UI that works on all devices
+- **Community Driven**: Real experiences from local users
+
+## 🚀 Quick Start
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/ayyushnegii/gauchar-business-hub.git
+cd gauchar-business-hub
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+```bash
+cp .env.local.example .env.local
+# Edit .env.local with your API keys
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Run the development server:
+```bash
+npm run dev
+```
 
-## Learn More
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+## 📁 Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── page.tsx           # Homepage
+│   ├── layout.tsx         # Root layout
+│   └── businesses/        # Business listing & detail pages
+├── components/             # Reusable UI components
+│   ├── business/          # BusinessCard, CategoryCard
+│   ├── review/            # SentimentButton, SentimentBar
+│   ├── search/            # SearchBar
+│   └── layout/            # Header
+├── hooks/                 # Custom React hooks
+├── i18n/                  # Translations
+├── lib/                   # Utility functions
+└── types/                 # TypeScript types
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ Tech Stack
 
-## Deploy on Vercel
+- **Frontend**: Next.js 16, React 19, TypeScript
+- **Styling**: Tailwind CSS v4
+- **State Management**: React Context + Hooks
+- **i18n**: Custom implementation (EN/HI)
+- **Backend** (Planned): Firebase or Supabase
+- **Deployment**: Vercel (recommended)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔧 Environment Variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Create a `.env.local` file with:
+
+```env
+# Google APIs
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+NEXT_PUBLIC_GOOGLE_PLACES_API_KEY=your_google_places_api_key
+
+# Firebase (Option 1)
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+
+# OR Supabase (Option 2)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+## 📖 Documentation
+
+See [documenting.md](./documenting.md) for comprehensive documentation about:
+- Architecture overview
+- Component details
+- Type definitions
+- Pending features
+- Deployment guide
+
+## 🎯 Current Status
+
+✅ **Completed (MVP)**:
+- Sentiment-based rating system
+- Homepage with categories and search
+- Business listing with filters
+- Business detail page
+- Multilingual support (EN/HI)
+- TypeScript types and utilities
+- Responsive design
+
+⏳ **Pending**:
+- Google Maps/Places API integration
+- User authentication
+- Backend database (Firebase/Supabase)
+- Media upload system
+- Real-time data fetching
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+
+MIT License - see LICENSE file for details.
+
+## 👤 Author
+
+**Ayush Negi** (@ayyushnegii)
+- GitHub: [ayyushnegii](https://github.com/ayyushnegii)
+- Portfolio: [ayyushportfolio.vercel.app](https://ayyushportfolio.vercel.app)
+
+## 🙏 Acknowledgments
+
+- Inspired by Letterboxd's sentiment-based rating system
+- Built for the community of Gauchar, Uttarakhand
+- Designed to scale from Gauchar → Chamoli → Uttarakhand → Beyond
