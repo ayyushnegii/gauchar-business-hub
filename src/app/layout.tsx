@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "../hooks/useLanguage";
 import Header from "../components/layout/Header";
+import BackToTop from "../components/layout/BackToTop";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,7 @@ export default function RootLayout({
           <main className="flex-1">
             {children}
           </main>
+          <BackToTop />
         </LanguageProvider>
       </body>
     </html>

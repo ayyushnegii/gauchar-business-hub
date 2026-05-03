@@ -1,21 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import BusinessCard from '../../components/business/BusinessCard';
 import SearchBar from '../../components/search/SearchBar';
+import GoogleMapComponent from '../../components/maps/GoogleMapComponent';
+import SkeletonCard from '../../components/ui/SkeletonCard';
 import { BusinessCategory, CATEGORY_LABELS, Sentiment, SENTIMENT_LABELS } from '../../types';
 import { useLanguage } from '../../hooks/useLanguage';
-
-// Dummy data
-const ALL_BUSINESSES = [
-  { id: '1', name: 'Hotel Snow View', category: 'hotels' as BusinessCategory, address: 'Main Market, Gauchar', googleRating: 4.5, sentimentCounts: { perfection: 15, go_for_it: 8, timepass: 3, skip: 1 }, dominantSentiment: 'perfection' },
-  { id: '2', name: 'Sharma Dhaba', category: 'restaurants' as BusinessCategory, address: 'Badrinath Road, Gauchar', googleRating: 4.2, sentimentCounts: { perfection: 10, go_for_it: 12, timepass: 5, skip: 2 }, dominantSentiment: 'go_for_it' },
-  { id: '3', name: 'Gupta Phone Repair', category: 'repair' as BusinessCategory, address: 'Near Bus Stand, Gauchar', googleRating: 3.8, sentimentCounts: { perfection: 5, go_for_it: 8, timepass: 10, skip: 3 }, dominantSentiment: 'timepass' },
-  { id: '4', name: 'Gauchar Medical Store', category: 'medical' as BusinessCategory, address: 'Hospital Road, Gauchar', googleRating: 4.0, sentimentCounts: { perfection: 8, go_for_it: 15, timepass: 4, skip: 1 }, dominantSentiment: 'go_for_it' },
-  { id: '5', name: 'Kumar Grocery', category: 'grocery' as BusinessCategory, address: 'Main Bazaar, Gauchar', googleRating: 4.3, sentimentCounts: { perfection: 12, go_for_it: 10, timepass: 3, skip: 0 }, dominantSentiment: 'perfection' },
-  { id: '6', name: 'Sagar Transport', category: 'transport' as BusinessCategory, address: 'Bus Stand, Gauchar', googleRating: 3.5, sentimentCounts: { perfection: 3, go_for_it: 7, timepass: 12, skip: 5 }, dominantSentiment: 'timepass' },
-];
+import { searchBusinessesInGauchar, GooglePlace } from '../../lib/googlePlaces';
 
 interface BusinessesPageProps {
   searchParams: { category?: string; q?: string };
@@ -24,37 +17,76 @@ interface BusinessesPageProps {
 export default function BusinessesPage({ searchParams }: BusinessesPageProps) {
   const { language, t } = useLanguage();
   
+  const [businesses, setBusinesses] = useState<GooglePlace[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<BusinessCategory | ''>(
     (searchParams.category as BusinessCategory) || ''
   );
   const [selectedSentiment, setSelectedSentiment] = useState<Sentiment | ''>('');
   const [sortBy, setSortBy] = useState<'perfection' | 'reviews' | 'recent'>('perfection');
 
+  useEffect(() => {
+    async function fetchBusinesses() {
+      setLoading(true);
+      const results = await searchBusinessesInGauchar(
+        selectedCategory || undefined,
+        searchParams.q || undefined
+      );
+      setBusinesses(results);
+      setLoading(false);
+    }
+    fetchBusinesses();
+  }, [selectedCategory, searchParams.q]);
+
   const handleSearch = (query: string) => {
     window.location.href = `/businesses?q=${encodeURIComponent(query)}`;
   };
 
-  // Filter businesses
-  let filtered = ALL_BUSINESSES;
+  // Map Google category types to our BusinessCategory
+  const mapGoogleTypeToCategory = (types: string[] = []): BusinessCategory => {
+    if (types.includes('lodging') || types.includes('hotel')) return 'hotels';
+    if (types.includes('restaurant') || types.includes('food')) return 'restaurants';
+    if (types.includes('store') || types.includes('grocery')) return 'grocery';
+    if (types.includes('hospital') || types.includes('pharmacy')) return 'medical';
+    if (types.includes('car_repair') || types.includes('electronics_repair')) return 'repair';
+    if (types.includes('travel_agency') || types.includes('transit_station')) return 'transport';
+    return 'restaurants'; // default
+  };
 
-  if (selectedCategory) {
-    filtered = filtered.filter(b => b.category === selectedCategory);
-  }
-
-  if (selectedSentiment) {
-    filtered = filtered.filter(b => b.dominantSentiment === selectedSentiment);
-  }
+  // Convert Google rating to our sentiment
+  const getSentimentFromRating = (rating?: number): Sentiment => {
+    if (!rating) return 'timepass';
+    if (rating >= 4.6) return 'perfection';
+    if (rating >= 4.0) return 'go_for_it';
+    if (rating >= 3.0) return 'timepass';
+    return 'skip';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Search Section */}
-      <section className="bg-blue-600 text-white py-8 px-4">
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <SearchBar onSearch={handleSearch} />
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Map Section */}
+        {businesses.length > 0 && (
+          <div className="mb-8">
+            <GoogleMapComponent 
+              businesses={businesses.map(b => ({
+                id: b.place_id,
+                name: b.name,
+                lat: b.geometry.location.lat,
+                lng: b.geometry.location.lng,
+                category: mapGoogleTypeToCategory(b.types)
+              }))}
+            />
+          </div>
+        )}
+
         <div className="flex flex-col md:flex-row gap-6">
           {/* Filters Sidebar */}
           <aside className="w-full md:w-64 flex-shrink-0">
@@ -115,7 +147,7 @@ export default function BusinessesPage({ searchParams }: BusinessesPageProps) {
           <main className="flex-1">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-bold text-gray-900">
-                {filtered.length} {filtered.length === 1 ? 'Business' : 'Businesses'} Found
+                {loading ? 'Loading...' : `${businesses.length} ${businesses.length === 1 ? 'Business' : 'Businesses'} Found`}
               </h1>
               <select
                 value={sortBy}
@@ -128,23 +160,34 @@ export default function BusinessesPage({ searchParams }: BusinessesPageProps) {
               </select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.map((business) => (
-                <Link key={business.id} href={`/businesses/${business.id}`}>
-                  <BusinessCard
-                    id={business.id}
-                    name={business.name}
-                    category={business.category}
-                    address={business.address}
-                    googleRating={business.googleRating}
-                    sentimentCounts={business.sentimentCounts}
-                    dominantSentiment={business.dominantSentiment}
-                  />
-                </Link>
-              ))}
-            </div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1,2,3].map(i => <SkeletonCard key={i} />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {businesses.map((business) => (
+                  <Link key={business.place_id} href={`/businesses/${business.place_id}`}>
+                    <BusinessCard 
+                      id={business.place_id}
+                      name={business.name}
+                      category={mapGoogleTypeToCategory(business.types)}
+                      address={business.formatted_address}
+                      googleRating={business.rating}
+                      sentimentCounts={{
+                        perfection: 0,
+                        go_for_it: 0,
+                        timepass: 0,
+                        skip: 0
+                      }}
+                      dominantSentiment={getSentimentFromRating(business.rating)}
+                    />
+                  </Link>
+                ))}
+              </div>
+            )}
 
-            {filtered.length === 0 && (
+            {!loading && businesses.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 <p>{language === 'hi' ? 'कोई व्यवसाय नहीं मिला' : 'No businesses found'}</p>
               </div>
