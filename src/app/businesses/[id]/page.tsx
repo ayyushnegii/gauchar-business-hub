@@ -1,45 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import SentimentButton from '../../../components/review/SentimentButton';
 import SentimentBar from '../../../components/review/SentimentBar';
+import GoogleMapComponent from '../../../components/maps/GoogleMapComponent';
 import { BusinessCategory, CATEGORY_LABELS, Sentiment, SENTIMENT_LABELS } from '../../../types';
 import { useLanguage } from '../../../hooks/useLanguage';
-import { calculateSentimentPercentages, getDominantSentiment } from '../../../lib/constants';
-
-// Dummy data
-const BUSINESS_DATA = {
-  id: '1',
-  name: 'Hotel Snow View',
-  category: 'hotels' as BusinessCategory,
-  address: 'Main Market, Gauchar, Uttarakhand - 246401',
-  coordinates: { lat: 30.5012, lng: 79.2234 },
-  contactNumber: '+91 1234567890',
-  whatsappLink: 'https://wa.me/911234567890',
-  openingHours: '24/7',
-  googleRating: 4.5,
-  googleReviewCount: 128,
-  googlePhotos: ['https://via.placeholder.com/400x300'],
-  sentimentCounts: { perfection: 15, go_for_it: 8, timepass: 3, skip: 1 } as Record<Sentiment, number>,
-  reviews: [
-    { id: '1', userId: 'u1', userName: 'Rahul S.', sentiment: 'perfection' as Sentiment, text: 'Amazing view of the Himalayas! Highly recommended.', createdAt: new Date() },
-    { id: '2', userId: 'u2', userName: 'Priya M.', sentiment: 'go_for_it' as Sentiment, text: 'Good stay, food could be better.', createdAt: new Date() },
-  ],
-};
+import { calculateSentimentPercentages, getDominantSentiment, googleRatingToSentiment } from '../../../lib/constants';
+import { searchBusinessesInGauchar, getPhotoUrl, GooglePlace } from '../../../lib/googlePlaces';
 
 export default function BusinessDetailPage() {
   const params = useParams();
   const { language, t } = useLanguage();
   const [selectedSentiment, setSelectedSentiment] = useState<Sentiment | null>(null);
   const [reviewText, setReviewText] = useState('');
+  const [business, setBusiness] = useState<GooglePlace | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const business = BUSINESS_DATA; // In real app, fetch by params.id
-  const dominantSentiment = getDominantSentiment(business.sentimentCounts);
-  const percentages = calculateSentimentPercentages(business.sentimentCounts);
-
-  const categoryInfo = CATEGORY_LABELS[business.category];
-  const categoryLabel = language === 'hi' ? categoryInfo.hi : categoryInfo.en;
+  useEffect(() => {
+    async function fetchBusiness() {
+      setLoading(true);
+      const placeId = params?.id as string;
+      
+      if (!placeId) {
+        setLoading(false);
+        return;
+      }
+      
+      // Search for this specific business
+      const results = await searchBusinessesInGauchar();
+      const found = results.find(b => b.place_id === placeId);
+      
+      if (found) {
+        setBusiness(found);
+      }
+      setLoading(false);
+    }
+    fetchBusiness();
+  }, [params?.id]);
 
   const handleSubmitReview = () => {
     if (!selectedSentiment) return;
@@ -48,10 +47,57 @@ export default function BusinessDetailPage() {
     setReviewText('');
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!business) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500">Business not found</p>
+      </div>
+    );
+  }
+
+  const sentimentCounts = {
+    perfection: 0,
+    go_for_it: 0,
+    timepass: 0,
+    skip: 0
+  };
+  
+  // If Google rating exists, add it to the appropriate sentiment
+  if (business.rating) {
+    const sentiment = googleRatingToSentiment(business.rating);
+    sentimentCounts[sentiment] = business.user_ratings_total || 1;
+  }
+
+  const dominantSentiment = getDominantSentiment(sentimentCounts);
+  const percentages = calculateSentimentPercentages(sentimentCounts);
+
+  // Map Google types to our category
+  const mapGoogleTypeToCategory = (types: string[] = []): BusinessCategory => {
+    if (types.includes('lodging') || types.includes('hotel')) return 'hotels';
+    if (types.includes('restaurant') || types.includes('food') || types.includes('cafe')) return 'restaurants';
+    if (types.includes('store') || types.includes('grocery_store')) return 'grocery';
+    if (types.includes('hospital') || types.includes('pharmacy') || types.includes('doctor')) return 'medical';
+    if (types.includes('car_repair') || types.includes('electronics_repair')) return 'repair';
+    if (types.includes('travel_agency') || types.includes('transit_station')) return 'transport';
+    return 'restaurants';
+  };
+
+  const category = mapGoogleTypeToCategory(business.types);
+  const categoryInfo = CATEGORY_LABELS[category];
+  const categoryLabel = language === 'hi' ? categoryInfo.hi : categoryInfo.en;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-blue-600 text-white py-12 px-4">
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">{categoryInfo.emoji}</span>
@@ -59,7 +105,7 @@ export default function BusinessDetailPage() {
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">{business.name}</h1>
           <p className="text-blue-100 flex items-center gap-2">
-            📍 {business.address}
+            📍 {business.formatted_address}
           </p>
         </div>
       </section>
@@ -68,41 +114,58 @@ export default function BusinessDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Map */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-bold mb-4">📍 Location</h2>
+              <GoogleMapComponent 
+                businesses={[{
+                  id: business.place_id,
+                  name: business.name,
+                  lat: business.geometry.location.lat,
+                  lng: business.geometry.location.lng,
+                  category: category
+                }]}
+                center={business.geometry.location}
+                zoom={15}
+              />
+            </div>
+
             {/* Info Cards */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {business.contactNumber && (
-                  <a href={`tel:${business.contactNumber}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                {business.formatted_phone_number && (
+                  <a href={`tel:${business.formatted_phone_number}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
                     <span className="text-2xl">📞</span>
                     <div>
                       <p className="text-sm text-gray-500">{t('contact')}</p>
-                      <p className="font-medium">{business.contactNumber}</p>
+                      <p className="font-medium">{business.formatted_phone_number}</p>
                     </div>
                   </a>
                 )}
-                {business.whatsappLink && (
-                  <a href={business.whatsappLink} target="_blank" className="flex items-center gap-3 p-3 bg-green-50 rounded-lg hover:bg-green-100">
-                    <span className="text-2xl">💬</span>
-                    <div>
-                      <p className="text-sm text-gray-500">{t('whatsapp')}</p>
-                      <p className="font-medium text-green-700">Chat on WhatsApp</p>
-                    </div>
-                  </a>
-                )}
-                {business.openingHours && (
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <span className="text-2xl">🕐</span>
-                    <div>
-                      <p className="text-sm text-gray-500">{t('openingHours')}</p>
-                      <p className="font-medium">{business.openingHours}</p>
-                    </div>
+                
+                <a href={`https://wa.me/${business.formatted_phone_number?.replace(/\D/g, '')}`} target="_blank" className="flex items-center gap-3 p-3 bg-green-50 rounded-lg hover:bg-green-100">
+                  <span className="text-2xl">💬</span>
+                  <div>
+                    <p className="text-sm text-gray-500">{t('whatsapp')}</p>
+                    <p className="font-medium text-green-700">Chat on WhatsApp</p>
                   </div>
-                )}
+                </a>
+                
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <span className="text-2xl">🕐</span>
+                  <div>
+                    <p className="text-sm text-gray-500">{t('openingHours')}</p>
+                    <p className="font-medium">
+                      {business.opening_hours?.open_now ? 'Open Now' : 'Closed'}
+                    </p>
+                  </div>
+                </div>
+                
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <span className="text-2xl">📍</span>
                   <div>
                     <p className="text-sm text-gray-500">{t('address')}</p>
-                    <p className="font-medium">{business.address}</p>
+                    <p className="font-medium">{business.formatted_address}</p>
                   </div>
                 </div>
               </div>
@@ -115,13 +178,13 @@ export default function BusinessDetailPage() {
               </h2>
               <div className="flex items-center gap-4">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-yellow-600">{business.googleRating}</div>
+                  <div className="text-4xl font-bold text-yellow-600">{business.rating || 'N/A'}</div>
                   <div className="text-sm text-gray-500">/ 5.0</div>
                 </div>
                 <div>
-                  <p className="text-gray-600">{business.googleReviewCount} {t('googleReviews')}</p>
+                  <p className="text-gray-600">{business.user_ratings_total || 0} {t('googleReviews')}</p>
                   <div className="flex text-yellow-400 text-xl">
-                    {'★'.repeat(Math.floor(business.googleRating))}{'☆'.repeat(5 - Math.floor(business.googleRating))}
+                    {'★'.repeat(Math.floor(business.rating || 0))}{'☆'.repeat(5 - Math.floor(business.rating || 0))}
                   </div>
                 </div>
               </div>
@@ -130,7 +193,7 @@ export default function BusinessDetailPage() {
             {/* Community Sentiment */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-bold mb-4">💬 {t('communitySentiment')}</h2>
-              <SentimentBar sentimentCounts={business.sentimentCounts} dominantSentiment={dominantSentiment} />
+              <SentimentBar sentimentCounts={sentimentCounts} dominantSentiment={dominantSentiment} />
               
               <div className="mt-6 space-y-3">
                 {(['perfection', 'go_for_it', 'timepass', 'skip'] as Sentiment[]).map((sentiment) => (
@@ -143,12 +206,12 @@ export default function BusinessDetailPage() {
                       <div className="w-32 h-3 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-blue-500" style={{ width: `${percentages[sentiment]}%` }} />
                       </div>
-                      <span className="text-sm text-gray-600 w-12 text-right">{business.sentimentCounts[sentiment]}</span>
+                      <span className="text-sm text-gray-600 w-12 text-right">{sentimentCounts[sentiment]}</span>
                     </div>
                   </div>
                 ))}
                 <p className="text-sm text-gray-500 text-center mt-4">
-                  {Object.values(business.sentimentCounts).reduce((a, b) => a + b, 0)} {t('totalVotes')}
+                  {Object.values(sentimentCounts).reduce((a, b) => a + b, 0)} {t('totalVotes')}
                 </p>
               </div>
             </div>
@@ -184,51 +247,26 @@ export default function BusinessDetailPage() {
                 </button>
               </div>
             </div>
-
-            {/* Reviews List */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold mb-4">{t('reviews')}</h2>
-              {business.reviews.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">{t('noReviews')}</p>
-              ) : (
-                <div className="space-y-4">
-                  {business.reviews.map((review) => (
-                    <div key={review.id} className="border-b border-gray-100 pb-4 last:border-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-700">
-                          {review.userName[0]}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{review.userName}</p>
-                          <p className="text-xs text-gray-500">
-                            {SENTIMENT_LABELS[review.sentiment].emoji}{' '}
-                            {language === 'hi' ? SENTIMENT_LABELS[review.sentiment].hi : SENTIMENT_LABELS[review.sentiment].en}
-                          </p>
-                        </div>
-                      </div>
-                      {review.text && <p className="text-gray-700 text-sm">{review.text}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* Sidebar - Map */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="font-bold mb-4">📍 {t('directions')}</h3>
-              <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center">
-                <p className="text-gray-500">Map View (Google Maps integration pending)</p>
+            {/* Photos */}
+            {business.photos && business.photos.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="font-bold mb-4">📷 Photos</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {business.photos.slice(0, 4).map((photo, index) => (
+                    <img
+                      key={index}
+                      src={getPhotoUrl(photo.photo_reference)}
+                      alt={`${business.name} photo ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                  ))}
+                </div>
               </div>
-              <a
-                href={`https://www.google.com/maps?q=${business.coordinates.lat},${business.coordinates.lng}`}
-                target="_blank"
-                className="mt-4 block text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Open in Google Maps
-              </a>
-            </div>
+            )}
           </div>
         </div>
       </div>

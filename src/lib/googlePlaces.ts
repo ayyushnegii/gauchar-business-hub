@@ -20,15 +20,20 @@ export type GooglePlace = {
   }>;
   types?: string[];
   formatted_phone_number?: string;
+  opening_hours?: {
+    open_now: boolean;
+  };
 };
 
 export async function searchBusinessesInGauchar(
   category?: string,
   query?: string
 ): Promise<GooglePlace[]> {
-  if (!GOOGLE_PLACES_API_KEY) {
-    console.warn('Google Maps API key not configured');
-    return [];
+  // Use mock data if no API key is configured
+  if (!GOOGLE_PLACES_API_KEY || GOOGLE_PLACES_API_KEY === 'your_google_maps_api_key_here') {
+    console.log('No Google API key found, using mock data');
+    const { searchMockBusinesses } = await import('./mockGooglePlaces');
+    return searchMockBusinesses(category, query) as GooglePlace[];
   }
 
   const searchQuery = query 
@@ -55,15 +60,24 @@ export async function searchBusinessesInGauchar(
     if (data.status === 'OK') {
       return data.results as GooglePlace[];
     }
+    
     console.error('Places API error:', data.status, data.error_message);
-    return [];
+    // Fallback to mock data on API error
+    const { searchMockBusinesses } = await import('./mockGooglePlaces');
+    return searchMockBusinesses(category, query) as GooglePlace[];
   } catch (error) {
     console.error('Failed to fetch places:', error);
-    return [];
+    // Fallback to mock data on network error
+    const { searchMockBusinesses } = await import('./mockGooglePlaces');
+    return searchMockBusinesses(category, query) as GooglePlace[];
   }
 }
 
 export function getPhotoUrl(photoReference: string, maxWidth = 400): string {
-  if (!GOOGLE_PLACES_API_KEY) return '';
+  if (!GOOGLE_PLACES_API_KEY || GOOGLE_PLACES_API_KEY === 'your_google_maps_api_key_here') {
+    // Use mock photo URLs
+    const { getMockPhotoUrl } = require('./mockGooglePlaces');
+    return getMockPhotoUrl(photoReference);
+  }
   return `${PLACES_API_BASE}/photo?maxwidth=${maxWidth}&photo_reference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
 }
